@@ -63,7 +63,7 @@ def train(args):
             mse_s,mse_r,mse_lb,mse_ub = loss(u_PINN,param,xcl,tcl,xs,ts,us,xlb,tlb,ulb,xub,tub,uub)
             loss_value = mse_s + mse_r + mse_lb + mse_ub
             if args.verbose:
-                if ((iter+1) % 100 == 0):
+                if ((iter == 0) or ((iter+1) % 100 == 0)):
                     print(
                     f'epoch: {iter}, '
                     f'mse_s, mse_lb, mse_ub, mse_r: {mse_s.numpy(), mse_lb.numpy(), mse_ub.numpy(), mse_r.numpy()}, '
@@ -94,11 +94,11 @@ def train(args):
 
         # display intermediate results  
         if args.show_steps:
-            if ((iter+1) % 1000 == 0):
+            if ((iter == 0) or ((iter+1) % 500 == 0)):
                 print('iter =  '+str(iter+1))
                 print('loss = %.4e' % loss_value)
                 print('diffusion coefficient estimate = {:.4f}/pi'.format(np.pi*param.numpy()))
-                print('L2 error for parameter: %.4e' % (np.abs(param-args.nu/np.pi)/(args.nu/np.pi)))
+                print('L2 error for parameter: %.4e' % (np.abs(param-args.param/np.pi)/(args.param/np.pi)))
                 u0_pred = u_PINN(tf.concat([x0,t0],1))
                 err0 = np.linalg.norm(u0-u0_pred,2)/norm_u0
                 print('L2 error for initial condition: %.4e' % (err0))
@@ -119,7 +119,7 @@ def train(args):
                     ax.set_xlabel('$x$')
                     ax.set_ylim([-1.3,1.3])
                     # plt.show()
-                    plt.savefig(path.join('train_imgs', f'nu_{args.nu}_sample_{args.Ns}', f'epoch_{iter}.png'), bbox_inches='tight')
+                    plt.savefig(path.join('train_imgs', f'nu_{args.param}_sample_{args.n_samples}', f'epoch_{iter}.png'), bbox_inches='tight')
 
 if __name__ == '__main__':
     import sys
@@ -130,13 +130,13 @@ if __name__ == '__main__':
     parser.add_argument('-v', '--verbose', action = 'store_true')
     parser.add_argument('-S', '--show_steps', action = 'store_true')
     parser.add_argument('-nu', '--param', type = float, default = 0.01) # nu/np.pi
-    parser.add_argument('-Ns', '--sample_points', type = int, default = 10000)
+    parser.add_argument('-Ns', '--n_samples', type = int, default = 10000)
     args = parser.parse_args()
     
     tf.random.set_seed(1234)
     # training and testing points, solutions:
-    gen = ODE_data_generator(args.nu/np.pi)
-    [xcl,tcl,xs,ts,us,xlb,tlb,ulb,xub,tub,uub,x0,t0,u0], [X_flat, u_flat] = get_generator(gen, Ns=args.Ns, Ncl=10000, Nlb=500, Nub=500, N0=500) # global var
+    gen = ODE_data_generator(args.param/np.pi)
+    [xcl,tcl,xs,ts,us,xlb,tlb,ulb,xub,tub,uub,x0,t0,u0], [X_flat, u_flat] = get_generator(gen, Ns=args.n_samples, Ncl=10000, Nlb=500, Nub=500, N0=500) # global var
     # for vis:
     uxn = gen.uxn
     ux = np.linspace(gen.xlo,gen.xhi,gen.uxn)

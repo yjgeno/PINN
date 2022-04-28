@@ -54,7 +54,7 @@ class ODE_data_generator():
         return self._u_flat
 
     # data points
-    def get_data_points(self, Ns=10000):
+    def get_data_points(self, Ns=10000, **kwargs):
         idxs = tf.range(tf.shape(self.X_flat)[0])
         ridxs = tf.random.shuffle(idxs)[:Ns]
         xs = tf.expand_dims(tf.gather(self.X_flat[:,0],ridxs),-1)
@@ -63,14 +63,14 @@ class ODE_data_generator():
         return xs, ts, us
 
     # collocation points
-    def get_collocation_points(self, Ncl=10000):
+    def get_collocation_points(self, Ncl=10000, **kwargs):
         X = lhs(2,Ncl)
         xcl = tf.expand_dims(tf.convert_to_tensor(self.xlo+(self.xhi-self.xlo)*X[:,0],dtype=tf.float32),-1)
         tcl = tf.expand_dims(tf.convert_to_tensor(self.tlo+(self.thi-self.tlo)*X[:,1],dtype=tf.float32),-1)
         return xcl, tcl
 
     # Dirichlet boundary condition points
-    def get_BC_points(self, Nlb=500, Nub=500):
+    def get_BC_points(self, Nlb=500, Nub=500, **kwargs):
         X = lhs(1,Nlb)
         tlb = tf.expand_dims(tf.convert_to_tensor(self.tlo+(self.thi-self.tlo)*X[:,0],dtype=tf.float32),-1)
         xlb = self.xlo*tf.ones(tf.shape(tlb),dtype=tf.float32)
@@ -83,7 +83,7 @@ class ODE_data_generator():
         return xlb, tlb, ulb, xub, tub, uub
 
     # test points for initial condition
-    def get_test_points(self, N0=500):
+    def get_test_points(self, N0=500, **kwargs):
         X = lhs(1,N0)
         x0 = tf.expand_dims(tf.convert_to_tensor(self.xlo+(self.xhi-self.xlo)*X[:,0],dtype=tf.float32),-1)
         t0 = tf.zeros(tf.shape(x0),dtype=tf.float32)
