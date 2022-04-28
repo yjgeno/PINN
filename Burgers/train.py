@@ -122,7 +122,8 @@ def train(args):
                     # plt.show()
                     os.makedirs('train_imgs', exist_ok = True)
                     plt.savefig(path.join('train_imgs', f'epoch_{iter}.png'), bbox_inches='tight')
-
+                    plt.clf()
+                    
 if __name__ == '__main__':
     import sys
     import argparse
