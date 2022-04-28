@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
+from os import path
 from .data import ODE_data_generator, get_generator
 from .model import neural_net
 
@@ -42,7 +43,6 @@ def train(args):
     # initialize new instance of NN
     u_PINN = neural_net()
     if args.log_dir is not None:
-        from os import path
         train_summary_writer = tf.summary.create_file_writer(path.join(args.log_dir, 'train'))
 
     # initialize parameter estimate
@@ -63,18 +63,25 @@ def train(args):
             mse_s,mse_r,mse_lb,mse_ub = loss(u_PINN,param,xcl,tcl,xs,ts,us,xlb,tlb,ulb,xub,tub,uub)
             loss_value = mse_s + mse_r + mse_lb + mse_ub
             if args.verbose:
-                  print(
+                if ((iter+1) % 100 == 0):
+                    print(
                     f'epoch: {iter}, '
                     f'mse_s, mse_lb, mse_ub, mse_r: {mse_s.numpy(), mse_lb.numpy(), mse_ub.numpy(), mse_r.numpy()}, '
                     f'loss_value: {loss_value.numpy()} '
                     )
             if args.log_dir is not None:
+                # MSE_s,MSE_r,MSE_lb,MSE_ub,MSE_loss = [],[],[],[]
                 with train_summary_writer.as_default():
                     tf.summary.scalar('mse_s', mse_s.numpy(), step=iter) # numpy scalar
                     tf.summary.scalar('mse_lb', mse_lb.numpy(), step=iter)
                     tf.summary.scalar('mse_ub', mse_ub.numpy(), step=iter)
                     tf.summary.scalar('mse_r', mse_r.numpy(), step=iter)
                     tf.summary.scalar('loss_value', loss_value.numpy(), step=iter)         
+                # MSE_s.append(mse_s.numpy())
+                # MSE_r.append(mse_r.numpy())
+                # MSE_lb.append(mse_lb.numpy())
+                # MSE_ub.append(mse_ub.numpy())
+                # MSE_loss.append(loss_value.numpy())
             grads = tape.gradient(loss_value,u_PINN.trainable_variables)
             grad_param = tape.gradient(loss_value,param) # call twice tape.gradient for nn weights and PDE param
 
@@ -87,11 +94,11 @@ def train(args):
 
         # display intermediate results  
         if args.show_steps:
-            if ((iter+1) % 500 == 0):
+            if ((iter+1) % 1000 == 0):
                 print('iter =  '+str(iter+1))
                 print('loss = %.4e' % loss_value)
                 print('diffusion coefficient estimate = {:.4f}/pi'.format(np.pi*param.numpy()))
-                print('L2 error for parameter: %.4e' % (np.abs(param-nu)/nu))
+                print('L2 error for parameter: %.4e' % (np.abs(param-args.nu)/args.nu))
                 u0_pred = u_PINN(tf.concat([x0,t0],1))
                 err0 = np.linalg.norm(u0-u0_pred,2)/norm_u0
                 print('L2 error for initial condition: %.4e' % (err0))
@@ -111,26 +118,30 @@ def train(args):
                     ax.set_title('$t = %.2f$' % (ut[tind]),fontsize=10)
                     ax.set_xlabel('$x$')
                     ax.set_ylim([-1.3,1.3])
-                    plt.show()
+                    # plt.show()
+                    plt.savefig(path.join('train_imgs', f'nu_{args.nu}_sample_{args.Ns}', f'epoch_{iter}.png'), bbox_inches='tight')
 
 if __name__ == '__main__':
+    import sys
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--log_dir')
     parser.add_argument('-n', '--n_epochs', type = int, default = 20000)
     parser.add_argument('-v', '--verbose', action = 'store_true')
     parser.add_argument('-S', '--show_steps', action = 'store_true')
+    parser.add_argument('-nu', '--param', type = int, default = 0.01/np.pi)
+    parser.add_argument('-Ns', '--sample_points', type = int, default = 10000)
     args = parser.parse_args()
     
     tf.random.set_seed(1234)
     # training and testing points, solutions:
-    nu = 0.01/np.pi
-    gen = ODE_data_generator(nu)
-    [xcl,tcl,xs,ts,us,xlb,tlb,ulb,xub,tub,uub,x0,t0,u0], [X_flat, u_flat] = get_generator(gen) # global var
+    gen = ODE_data_generator(args.nu)
+    [xcl,tcl,xs,ts,us,xlb,tlb,ulb,xub,tub,uub,x0,t0,u0], [X_flat, u_flat] = get_generator(gen, Ns=args.Ns, Ncl=10000, Nlb=500, Nub=500, N0=500) # global var
     # for vis:
     uxn = gen.uxn
     ux = np.linspace(gen.xlo,gen.xhi,gen.uxn)
     ut = np.linspace(gen.tlo,gen.thi,gen.utn)
       
     train(args)
-    # python -m Burgers.train --log_dir logdir -n 1000 -v
+    sys.exit()
+    # python -m Burgers.train --log_dir logdir -n 10000 -v
