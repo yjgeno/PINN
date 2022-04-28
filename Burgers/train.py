@@ -121,7 +121,7 @@ def train(args):
                     ax.set_ylim([-1.3,1.3])
                     # plt.show()
                     os.makedirs('train_imgs', exist_ok = True)
-                    plt.savefig(path.join('train_imgs', f'nu_{args.param}_sample_{args.n_samples}', f'epoch_{iter}.png'), bbox_inches='tight')
+                    plt.savefig(path.join('train_imgs', f'epoch_{iter}.png'), bbox_inches='tight')
 
 if __name__ == '__main__':
     import sys
@@ -143,7 +143,10 @@ if __name__ == '__main__':
     uxn = gen.uxn
     ux = np.linspace(gen.xlo,gen.xhi,gen.uxn)
     ut = np.linspace(gen.tlo,gen.thi,gen.utn)
-      
+
+    log_file = open('message.log','w')  
+    sys.stdout = log_file
     train(args)
+    log_file.close()
     sys.exit()
     # python -m Burgers.train --log_dir logdir/train1 -nu 0.01 -Ns 10000 -S -v
