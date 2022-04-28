@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 from os import path
 from .data import ODE_data_generator, get_generator
 from .model import neural_net
@@ -119,6 +120,7 @@ def train(args):
                     ax.set_xlabel('$x$')
                     ax.set_ylim([-1.3,1.3])
                     # plt.show()
+                    os.makedirs('train_imgs', exist_ok = True)
                     plt.savefig(path.join('train_imgs', f'nu_{args.param}_sample_{args.n_samples}', f'epoch_{iter}.png'), bbox_inches='tight')
 
 if __name__ == '__main__':
