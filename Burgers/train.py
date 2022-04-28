@@ -98,7 +98,7 @@ def train(args):
                 print('iter =  '+str(iter+1))
                 print('loss = %.4e' % loss_value)
                 print('diffusion coefficient estimate = {:.4f}/pi'.format(np.pi*param.numpy()))
-                print('L2 error for parameter: %.4e' % (np.abs(param-args.nu)/args.nu))
+                print('L2 error for parameter: %.4e' % (np.abs(param-args.nu/np.pi)/(args.nu/np.pi)))
                 u0_pred = u_PINN(tf.concat([x0,t0],1))
                 err0 = np.linalg.norm(u0-u0_pred,2)/norm_u0
                 print('L2 error for initial condition: %.4e' % (err0))
@@ -129,13 +129,13 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--n_epochs', type = int, default = 20000)
     parser.add_argument('-v', '--verbose', action = 'store_true')
     parser.add_argument('-S', '--show_steps', action = 'store_true')
-    parser.add_argument('-nu', '--param', type = int, default = 0.01/np.pi)
+    parser.add_argument('-nu', '--param', type = float, default = 0.01) # nu/np.pi
     parser.add_argument('-Ns', '--sample_points', type = int, default = 10000)
     args = parser.parse_args()
     
     tf.random.set_seed(1234)
     # training and testing points, solutions:
-    gen = ODE_data_generator(args.nu)
+    gen = ODE_data_generator(args.nu/np.pi)
     [xcl,tcl,xs,ts,us,xlb,tlb,ulb,xub,tub,uub,x0,t0,u0], [X_flat, u_flat] = get_generator(gen, Ns=args.Ns, Ncl=10000, Nlb=500, Nub=500, N0=500) # global var
     # for vis:
     uxn = gen.uxn
@@ -144,4 +144,4 @@ if __name__ == '__main__':
       
     train(args)
     sys.exit()
-    # python -m Burgers.train --log_dir logdir -n 10000 -v
+    # python -m Burgers.train --log_dir logdir/train1 -nu 0.01 -Ns 10000 -S -v
