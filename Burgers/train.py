@@ -136,12 +136,13 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--log_dir')
-    parser.add_argument('-r', '--run', type = int, default = '0') # name of the run
+    parser.add_argument('-r', '--run', type = str, default = '0') # name of the run
     parser.add_argument('-n', '--n_epochs', type = int, default = 20000)
-    parser.add_argument('-v', '--verbose', action = 'store_true')
-    parser.add_argument('-l', '--logging', action = 'store_true')
     parser.add_argument('-nu', '--param', type = float, default = 0.01) # nu/np.pi
     parser.add_argument('-Ns', '--n_samples', type = int, default = 10000)
+    parser.add_argument('-v', '--verbose', action = 'store_true')
+    parser.add_argument('-l', '--logging', action = 'store_true')
+
     args = parser.parse_args()
     
     tf.random.set_seed(1234)
@@ -158,4 +159,4 @@ if __name__ == '__main__':
     train(args)
     # log_file.close()
     sys.exit()
-    # python -m Burgers.train --log_dir logdir/train1 -N 1 -n 1000 -nu 0.01 -Ns 10000 -l -v
+    # python -m Burgers.train --log_dir logdir/train1 -n 1000 -nu 0.01 -Ns 10000 -l -v
