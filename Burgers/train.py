@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 from os import path
+import logging
 from .data import ODE_data_generator, get_generator
 from .model import neural_net
 
@@ -45,7 +46,13 @@ def train(args):
     u_PINN = neural_net()
     if args.log_dir is not None:
         train_summary_writer = tf.summary.create_file_writer(path.join(args.log_dir, 'train'))
-
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    output_file_handler = logging.FileHandler(f'INFO_{args.run}.log')
+    logger.addHandler(output_file_handler)
+    stdout_handler = logging.StreamHandler(sys.stdout) # for sys.stdout stream
+    logger.addHandler(stdout_handler)
+    
     # initialize parameter estimate
     param = tf.Variable(0.1,trainable=True,dtype=tf.float32) # v: viscosity in Burgers PDE
     # Adam optimizer for neural network weights and parameter
@@ -66,7 +73,7 @@ def train(args):
             if args.verbose:
                 if ((iter == 0) or ((iter+1) % 100 == 0)):
                     print(
-                    f'epoch: {iter}, '
+                    f'epoch: {iter+1}, '
                     f'mse_s, mse_lb, mse_ub, mse_r: {mse_s.numpy(), mse_lb.numpy(), mse_ub.numpy(), mse_r.numpy()}, '
                     f'loss_value: {loss_value.numpy()} '
                     )
@@ -94,19 +101,19 @@ def train(args):
         tf_optimizer_param.apply_gradients(zip([grad_param],[param]))
 
         # display intermediate results  
-        if args.show_steps:
+        if args.logging:
             if ((iter == 0) or ((iter+1) % 500 == 0)):
-                print('iter =  '+str(iter+1))
-                print('loss = %.4e' % loss_value)
-                print('diffusion coefficient estimate = {:.4f}/pi'.format(np.pi*param.numpy()))
-                print('L2 error for parameter: %.4e' % (np.abs(param-args.param/np.pi)/(args.param/np.pi)))
+                logger.info(f'iter = {iter}')
+                logger.info('loss = %.4e' % loss_value)
+                logger.info('diffusion coefficient estimate = {:.4f}/pi'.format(np.pi*param.numpy()))
+                logger.info('L2 error for parameter: %.4e' % (np.abs(param-args.param/np.pi)/(args.param/np.pi)))
                 u0_pred = u_PINN(tf.concat([x0,t0],1))
                 err0 = np.linalg.norm(u0-u0_pred,2)/norm_u0
-                print('L2 error for initial condition: %.4e' % (err0))
+                logger.info('L2 error for initial condition: %.4e' % (err0))
                 u_PINN_flat = u_PINN(X_flat)
                 
                 err = np.linalg.norm(u_flat-u_PINN_flat[:,-1],2)/norm_u
-                print('L2 error: %.4e' % (err))
+                logger.info('L2 error: %.4e\n' % (err))
                 #plot_slices(u_flat,u_PINN_flat,[0.15,0.5,0.85])
                 fig = plt.figure(figsize=(12,4),dpi=75)
                 plt.style.use('seaborn')
@@ -120,18 +127,19 @@ def train(args):
                     ax.set_xlabel('$x$')
                     ax.set_ylim([-1.3,1.3])
                     # plt.show()
-                    os.makedirs('train_imgs', exist_ok = True)
+                    os.makedirs(path.join('train_imgs', f'run_{args.run}'), exist_ok = True)
                     plt.savefig(path.join('train_imgs', f'epoch_{iter}.png'), bbox_inches='tight')
-                    plt.close(fig)
+                plt.close(fig)
                     
 if __name__ == '__main__':
     import sys
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--log_dir')
+    parser.add_argument('-r', '--run', type = int, default = '0') # name of the run
     parser.add_argument('-n', '--n_epochs', type = int, default = 20000)
     parser.add_argument('-v', '--verbose', action = 'store_true')
-    parser.add_argument('-S', '--show_steps', action = 'store_true')
+    parser.add_argument('-l', '--logging', action = 'store_true')
     parser.add_argument('-nu', '--param', type = float, default = 0.01) # nu/np.pi
     parser.add_argument('-Ns', '--n_samples', type = int, default = 10000)
     args = parser.parse_args()
@@ -145,9 +153,9 @@ if __name__ == '__main__':
     ux = np.linspace(gen.xlo,gen.xhi,gen.uxn)
     ut = np.linspace(gen.tlo,gen.thi,gen.utn)
 
-    log_file = open('message.log','w')  
-    sys.stdout = log_file
+    # log_file = open('message.log','w')  
+    # sys.stdout = log_file
     train(args)
-    log_file.close()
+    # log_file.close()
     sys.exit()
-    # python -m Burgers.train --log_dir logdir/train1 -nu 0.01 -Ns 10000 -S -v
+    # python -m Burgers.train --log_dir logdir/train1 -N 1 -n 1000 -nu 0.01 -Ns 10000 -l -v
