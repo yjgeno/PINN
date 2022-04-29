@@ -128,7 +128,7 @@ def train(args):
                     ax.set_ylim([-1.3,1.3])
                     # plt.show()
                     os.makedirs(path.join('train_imgs', f'run_{args.run}'), exist_ok = True)
-                    plt.savefig(path.join('train_imgs', f'epoch_{iter}.png'), bbox_inches='tight')
+                    plt.savefig(path.join('train_imgs', f'run_{args.run}', f'epoch_{iter}.png'), bbox_inches='tight')
                 plt.close(fig)
                     
 if __name__ == '__main__':
